@@ -1,15 +1,39 @@
-# Face Recognition — DeiT + MediaPipe
+# Face Recognition — DeiT vs DenseNet
 
-Face recognition pipeline that combines DeiT image transformers with a MediaPipe-based face preprocessing stack. The repository contains:
+Face recognition pipeline that compares two backbones — a DeiT transformer and a DenseNet CNN — while sharing the same MediaPipe-based preprocessing. Use the notebooks to benchmark both models on identical datasets and contrast latency/accuracy trade-offs.
+
+## Repository Map
 
 - **`deit_face_recognition.ipynb`** — end-to-end experimentation notebook (data scan, DeiT fine-tuning, evaluation, and inference helpers).
+- **`densenet_face_recognition.ipynb`** — DenseNet-focused notebook with the same preprocessing pipeline for a CNN baseline.
 - **`app.py`** — Gradio interface that reuses the MediaPipe preprocessing stack for real-time predictions.
-- **`face_deit_best.pth`** — checkpoint produced by the notebook (weights, class list, and training cfg).
+- **`face_deit_best.pth`** — checkpoint produced by the DeiT notebook (weights, class list, and training cfg).
+- **`face_densenet_best.h5`** — saved DenseNet weights for quick inference.
 - **`dataset-train/`** — identity folders used for supervised training (`dataset-train/train/<person_name>/*.jpg|png|heic|webp`).
 
+## Contributors
+
+| Nama | NIM |
+| ---- | --- |
+| Lois Novel E Gurning | 122140098 |
+| Fiqri Aldiansyah | 122140152 |
+
+## Model Variants & Comparison
+
+| Model | Backbone | Notes |
+| ----- | -------- | ----- |
+| DeiT | Vision Transformer (`deit_tiny_patch16_224` or `deit_small_patch16_224`) | Stronger accuracy on larger datasets, higher compute cost. |
+| DenseNet | DenseNet-121/169 (configurable inside the notebook) | Faster inference on CPU, good baseline for limited data. |
+
+Both notebooks share:
+
+- **MediaPipe preprocessing**: MediaPipe FaceDetection crops the sharpest face, pads it to a square region, resizes to 224×224, then applies CLAHE + bilateral filtering to stabilize illumination.
+- **Albumentations augmentation recipes** to keep training configurations aligned.
+- **Evaluation blocks** that log accuracy, F1, confusion matrices, and per-class scores so you can directly compare DeiT vs. DenseNet.
+
 ## Highlights
-- **MediaPipe preprocessing**: MediaPipe FaceDetection crops the sharpest face, pads it to a square region, resizes to DeiT input size, then applies CLAHE + bilateral filtering to stabilize illumination.
-- **Transformer backbone**: Uses the `timm` DeiT family (`deit_tiny_patch16_224` or `deit_small_patch16_224`) with Albumentations augmentation recipes defined in the notebook.
+- **Transformer backbone**: Uses the `timm` DeiT family with Albumentations augmentation recipes defined in the notebook.
+- **DenseNet baseline**: Offers a convolutional counterpart for comparison; checkpoints saved as `.h5`.
 - **Consistent inference interface**: `app.py` loads everything from the saved checkpoint (architecture, class list, Albumentations config) so that Gradio and the notebook stay in sync.
 - **Hugging Face Space ready**: `requirements.txt` + `runtime.txt` lock dependencies (Torch 2.x, MediaPipe 0.10.x, Python 3.10) for reproducible deployments.
 
@@ -85,6 +109,25 @@ During inference the app:
 2. Set the Space SDK to **Gradio** and entry point to `app.py`.
 3. Ensure hardware selections match your needs (`cpu-basic` is sufficient unless you require GPU inference).
 4. On every build, Spaces runs `pip install -r requirements.txt` under Python 3.10 and launches `python app.py`.
+
+## Directory Structure
+
+```
+.
+├── README.md
+├── app.py
+├── requirements.txt
+├── deit_face_recognition.ipynb
+├── densenet_face_recognition.ipynb
+├── retinaface_deit_face_recognition.ipynb
+├── prediksi_face_recognition.csv
+├── face_deit_best.pth
+├── face_densenet_best.h5
+└── dataset-train/
+    └── train/
+        └── <person_name>/
+            └── *.jpg|png|heic|webp
+```
 
 ## Tips & Troubleshooting
 
