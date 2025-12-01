@@ -1,4 +1,4 @@
-# Face Recognition — DeiT vs DenseNet
+# Presensi Mahasiswa dengan Face Recognition — DeiT vs DenseNet
 
 Face recognition pipeline that compares two backbones — a DeiT transformer and a DenseNet CNN — while sharing the same MediaPipe-based preprocessing. Use the notebooks to benchmark both models on identical datasets and contrast latency/accuracy trade-offs.
 
@@ -37,8 +37,6 @@ Face recognition pipeline that compares two backbones — a DeiT transformer and
 | `jupyter`/`ipykernel` (not in `requirements.txt`) | Needed if you plan to run the notebook locally |
 
 Install everything inside a Python 3.10 environment (requirement for MediaPipe):
-
-> On Hugging Face Spaces, keep `runtime.txt` set to `python-3.10` so the build image matches the dependency constraints.
 
 ## Training Workflow (`deit_face_recognition.ipynb`)
 
