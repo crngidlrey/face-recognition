@@ -22,20 +22,8 @@ Face recognition pipeline that compares two backbones — a DeiT transformer and
 
 | Model | Backbone | Notes |
 | ----- | -------- | ----- |
-| DeiT | Vision Transformer (`deit_tiny_patch16_224` or `deit_small_patch16_224`) | Stronger accuracy on larger datasets, higher compute cost. |
-| DenseNet | DenseNet-121/169 (configurable inside the notebook) | Faster inference on CPU, good baseline for limited data. |
-
-Both notebooks share:
-
-- **MediaPipe preprocessing**: MediaPipe FaceDetection crops the sharpest face, pads it to a square region, resizes to 224×224, then applies CLAHE + bilateral filtering to stabilize illumination.
-- **Albumentations augmentation recipes** to keep training configurations aligned.
-- **Evaluation blocks** that log accuracy, F1, confusion matrices, and per-class scores so you can directly compare DeiT vs. DenseNet.
-
-## Highlights
-- **Transformer backbone**: Uses the `timm` DeiT family with Albumentations augmentation recipes defined in the notebook.
-- **DenseNet baseline**: Offers a convolutional counterpart for comparison; checkpoints saved as `.h5`.
-- **Consistent inference interface**: `app.py` loads everything from the saved checkpoint (architecture, class list, Albumentations config) so that Gradio and the notebook stay in sync.
-- **Hugging Face Space ready**: `requirements.txt` + `runtime.txt` lock dependencies (Torch 2.x, MediaPipe 0.10.x, Python 3.10) for reproducible deployments.
+| DeiT | Vision Transformer (`deit_tiny_patch16_224`) | Stronger accuracy on larger datasets, higher compute cost. |
+| DenseNet | DenseNet-121 (configurable inside the notebook) | Faster inference on CPU, good baseline for limited data. |
 
 ## Requirements
 
@@ -50,28 +38,7 @@ Both notebooks share:
 
 Install everything inside a Python 3.10 environment (requirement for MediaPipe):
 
-```bash
-python3.10 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
 > On Hugging Face Spaces, keep `runtime.txt` set to `python-3.10` so the build image matches the dependency constraints.
-
-## Dataset Layout
-
-```
-dataset-train/
-└── train/
-    ├── Person_A/
-    │   ├── img1.jpg
-    │   └── img2.png
-    └── Person_B/
-        └── ...
-```
-
-Every folder name becomes the target label. The notebook scans these directories, runs MediaPipe preprocessing once per image, and caches failures (missing faces, unreadable files, etc.).
 
 ## Training Workflow (`deit_face_recognition.ipynb`)
 
@@ -79,36 +46,6 @@ Every folder name becomes the target label. The notebook scans these directories
 2. **Preprocess** — the notebook scans `dataset-train/train`, detects faces via MediaPipe, applies CLAHE + bilateral filtering, and caches the enhanced crops in memory.
 3. **Tuning / Training** — run the hyperparameter sweep section or jump to the manual training cell. Both paths rely on identical Albumentations transforms and training utilities.
 4. **Evaluation & Inference** — use the built-in evaluation cells to inspect metrics, confusion matrices, and run sample predictions. Saving the best model produces `face_deit_best.pth`.
-
-All helper functions (transforms, dataset wrappers, training loops, scheduler) mirror the approach used in the food-classification template but consume the MediaPipe-preprocessed tensors.
-
-## Running the Gradio App (`app.py`)
-
-```bash
-python app.py
-```
-
-Key environment variables:
-
-| Variable | Default | Description |
-| -------- | ------- | ----------- |
-| `MODEL_PATH` | `face_deit_best.pth` | Checkpoint to load (contains cfg, weights, and class names). |
-| `MEDIAPIPE_MODEL` | from checkpoint cfg or `0` | FaceDetection model selection (`0` = short-range, `1` = full-range). |
-| `MEDIAPIPE_MIN_CONF` | from cfg or `0.5` | Minimum detection confidence. |
-| `MEDIAPIPE_BBOX_MARGIN` | from cfg or `0.2` | Extra padding ratio when cropping faces. |
-
-During inference the app:
-
-1. Converts the uploaded image to RGB and passes it to MediaPipe.
-2. Crops and resizes the most confident face, applies CLAHE + bilateral filtering.
-3. Runs the DeiT model, shows the top-3 identity probabilities, and overlays the bounding box on the uploaded photo.
-
-## Deploying to Hugging Face Spaces
-
-1. Push the repository (including `app.py`, `requirements.txt`, `runtime.txt`, checkpoint, and any assets) to a new Space.
-2. Set the Space SDK to **Gradio** and entry point to `app.py`.
-3. Ensure hardware selections match your needs (`cpu-basic` is sufficient unless you require GPU inference).
-4. On every build, Spaces runs `pip install -r requirements.txt` under Python 3.10 and launches `python app.py`.
 
 ## Directory Structure
 
@@ -119,8 +56,6 @@ During inference the app:
 ├── requirements.txt
 ├── deit_face_recognition.ipynb
 ├── densenet_face_recognition.ipynb
-├── retinaface_deit_face_recognition.ipynb
-├── prediksi_face_recognition.csv
 ├── face_deit_best.pth
 ├── face_densenet_best.h5
 └── dataset-train/
@@ -129,11 +64,3 @@ During inference the app:
             └── *.jpg|png|heic|webp
 ```
 
-## Tips & Troubleshooting
-
-- **MediaPipe install errors**: use Python 3.10; other versions (e.g., 3.13) currently lack prebuilt wheels.
-- **No face detected**: uploads must contain a clear single face. Increase `MEDIAPIPE_MIN_CONF` or adjust `mediapipe_bbox_margin` if detections are too tight.
-- **Custom checkpoints**: after retraining, copy the new `.pth` file to the deployment artifact and update `MODEL_PATH` accordingly.
-- **Dataset updates**: rerun the notebook preprocessing cell so new images enter the cache and metadata DataFrame before retraining.
-
-Happy experimenting!
